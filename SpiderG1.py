@@ -72,7 +72,8 @@ while True:
                 "url": news.url,
                 "img": news.img
             }
-            
+            if latest_news.find({"title": {"$in": title}}).count > 0:
+                break
             latest_news.insert_one(news_up)
             
         except:
