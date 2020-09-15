@@ -15,14 +15,13 @@ class News:
         self.img = img
         
 
-listNews = list()
 
-
-mongo = MongoClient('localhost', 27017)
-
-db = mongo.G1LatestDB
-
-latest_news = db.G1LatestCL
+try:
+    mongo = MongoClient('localhost', 27017)
+    db = mongo.G1News
+    latest_news = db.g1news
+except:
+    print('Não Foi possivel conectar ao mongo')
 
 while True:
     
@@ -39,8 +38,12 @@ while True:
     for container in containers:
         
         try:
-            title = container.findAll("a", {"class": "feed-post-link gui-color-primary gui-color-hover"})[0]
-            url_post = title["href"]
+            try:
+                title = container.findAll("a", {"class": "feed-post-link gui-color-primary gui-color-hover"})[0]
+                url_post = title["href"]
+            except:
+                title = ""
+                url_post = ""
             
             try:
                 description = container.findAll("div", {"class": "feed-post-body-resumo"})[0].text
@@ -57,24 +60,25 @@ while True:
     
             news = News(title.text, description, url_post, img)
         
-            if any(elem.title == news.title for elem in listNews):
-                break
-        
-            print("Titulo: {}".format(news.title))
-            print("Descrição: {}".format(news.desc))
-            print("Link: {}".format(news.url))
-            print("Imagem: {}".format(news.img))
             
-            listNews.append(news)
+            
             news_up = {
                 "title": news.title,
                 "description": news.desc,
                 "url": news.url,
                 "img": news.img
             }
-            if latest_news.find({"title": {"$in": title}}).count > 0:
+            doc = latest_news.find_one({"title":news_up["title"]})
+            if doc == None:
+                latest_news.insert_one(news_up)
+            else:
+                print("Sem noticias novas")
                 break
-            latest_news.insert_one(news_up)
+                
+            print("Titulo: {}".format(news.title))
+            print("Descrição: {}".format(news.desc))
+            print("Link: {}".format(news.url))
+            print("Imagem: {}".format(news.img))
             
         except:
             print("Algum elemento não encontrado!")
@@ -84,3 +88,4 @@ while True:
         url_post = ""
         img = ""
         
+    sleep(20)
